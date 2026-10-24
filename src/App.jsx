@@ -19,6 +19,7 @@ import Products from "./pages/admin/Products";
 import Orders from "./pages/admin/Orders";
 import ProductDetails from "./pages/ProductDetails";
 import BackendFrontendPractice from "./pages/BackendFrontendPractice";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -64,6 +65,9 @@ function App() {
           <Route path="/signup" element={<Signup />} />
         </Route>
       </Route>
+
+      {/* 404 Catch-All Page for unmatched routes */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
