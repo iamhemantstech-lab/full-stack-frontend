@@ -89,11 +89,11 @@ const Signup = () => {
     const formDataPayload = objectToFormData(values);
 
     // 3. Dispatch Redux Thunk
-    const response = await dispatch(registerUser(formDataPayload));
+    const response = await dispatch(registerUser(formDataPayload)).unwrap();
     console.log("response", response);
 
     // 4. On successful registration
-    if (registerUser.fulfilled.match(response)) {
+    if (response?.statusCode === 200) {
       resetForm();
       setAvatarPreview(null);
       setCoverPreview(null);
