@@ -10,14 +10,7 @@ const PublicRoute = () => {
 
   const isUserAuthenticated = isAuthenticated || !!(user?._id || user?.id);
 
-  if (loading && !isUserAuthenticated) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
-        <p style={{ color: "var(--accent, #a855f7)", fontWeight: 600 }}>Loading...</p>
-      </div>
-    );
-  }
-
+  // If user is already authenticated, redirect away from public auth pages
   if (isUserAuthenticated) {
     return <Navigate to="/" replace />;
   }

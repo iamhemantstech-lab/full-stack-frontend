@@ -84,26 +84,28 @@ const Signup = () => {
     coverImage: null,
   };
 
-  const handleSignup = async (values, { resetForm }) => {
-    // 2. Convert all fields and files into FormData
-    const formDataPayload = objectToFormData(values);
+  const handleSignup = async (values, { setSubmitting }) => {
+    try {
+      // 2. Convert all fields and files into FormData
+      const formDataPayload = objectToFormData(values);
 
-    // 3. Dispatch Redux Thunk
-    const response = await dispatch(registerUser(formDataPayload)).unwrap();
-    console.log("response", response);
+      // 3. Dispatch Redux Thunk
+      const response = await dispatch(registerUser(formDataPayload)).unwrap();
+      console.log("Signup response:", response);
 
-    // 4. On successful registration
-    if (response?.statusCode === 200) {
-      resetForm();
-      setAvatarPreview(null);
-      setCoverPreview(null);
-      dispatch(resetAuthState());
-      navigate("/login", {
-        state: {
-          email: values.email,
-          message: "Account created successfully! Please log in to continue.",
-        },
-      });
+      // 4. On successful registration, redirect directly to login
+      if (response?.statusCode === 200 || response?.data) {
+        navigate("/login", {
+          state: {
+            email: values.email,
+            message: "Account created successfully! Please log in to continue.",
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Registration failed:", error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,6 +145,7 @@ const Signup = () => {
             handleBlur,
             handleSubmit,
             setFieldValue,
+            isSubmitting,
           }) => (
             <form
               className="space-y-4"
@@ -317,9 +320,12 @@ const Signup = () => {
                 variant="primary"
                 fullWidth
                 type="submit"
-                loading={isLoading}
+                loading={isLoading || isSubmitting}
+                disabled={isLoading || isSubmitting}
               >
-                Create Account
+                {isLoading || isSubmitting
+                  ? "Creating Account..."
+                  : "Create Account"}
               </Button>
             </form>
           )}

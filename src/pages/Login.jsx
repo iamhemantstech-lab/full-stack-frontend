@@ -1,19 +1,32 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import TextInput from "../components/common/TextInput";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, selectAuth } from "../store/slices/authSlice";
 import Button from "../components/common/Button";
 
 export default function Login() {
+  const location = useLocation();
   const [formData, setFormData] = useState({
-    email: "",
+    email: location.state?.email || "",
     password: "",
   });
-  const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
+  const [statusMessage, setStatusMessage] = useState({
+    type: location.state?.message ? "success" : "",
+    text: location.state?.message || "",
+  });
   const { isLoading, isError, isSuccess, message } = useSelector(selectAuth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (location.state?.email) {
+      setFormData((prev) => ({ ...prev, email: location.state.email }));
+    }
+    if (location.state?.message) {
+      setStatusMessage({ type: "success", text: location.state.message });
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     setFormData({
