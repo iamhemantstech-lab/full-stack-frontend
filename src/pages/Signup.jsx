@@ -97,16 +97,13 @@ const Signup = () => {
       resetForm();
       setAvatarPreview(null);
       setCoverPreview(null);
-
-      setTimeout(() => {
-        dispatch(resetAuthState());
-        navigate("/login", {
-          state: {
-            email: values.email,
-            message: "Account created successfully! Please log in to continue.",
-          },
-        });
-      }, 1500);
+      dispatch(resetAuthState());
+      navigate("/login", {
+        state: {
+          email: values.email,
+          message: "Account created successfully! Please log in to continue.",
+        },
+      });
     }
   };
 
