@@ -139,7 +139,7 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload.data; // User data from backend ApiResponse
+        state.user = null; // User is registered, NOT logged in yet
         state.message =
           action.payload.message || "Account registered successfully!";
       })
