@@ -76,7 +76,12 @@ apiClient.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then((newToken) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            if (originalRequest.headers?.set) {
+              originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
+            } else {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            }
+            return apiClient(originalRequest);
           })
           .catch((err) => Promise.reject(err));
       }
@@ -108,7 +113,11 @@ apiClient.interceptors.response.use(
         processQueue(null, newAccessToken);
 
         // 4. Update the current failed request with the new token
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        if (originalRequest.headers?.set) {
+          originalRequest.headers.set("Authorization", `Bearer ${newAccessToken}`);
+        } else {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        }
 
         // 5. RETRY THE ORIGINAL REQUEST AUTOMATICALLY!
         return apiClient(originalRequest);

@@ -1,10 +1,25 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuthState } from "../context/authContext";
 
 const HomePage = () => {
   const authState = useAuthState?.() || {};
   const currentUser = authState?.currentUser;
+
+  useEffect(() => {
+    let seconds = 1;
+    const timer = setInterval(() => {
+      console.log("timer:", seconds++);
+
+      if (seconds > 60) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-12 space-y-16 text-center">
@@ -55,7 +70,9 @@ const HomePage = () => {
         <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-2">
           <div className="text-2xl">⚡</div>
           <div>
-            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">0 ms</h4>
+            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">
+              0 ms
+            </h4>
             <p className="text-xs text-neutral-500">Wasted Action Re-renders</p>
           </div>
         </div>
@@ -63,7 +80,9 @@ const HomePage = () => {
         <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-2">
           <div className="text-2xl">🔒</div>
           <div>
-            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">100%</h4>
+            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">
+              100%
+            </h4>
             <p className="text-xs text-neutral-500">Protected Route Guards</p>
           </div>
         </div>
@@ -71,7 +90,9 @@ const HomePage = () => {
         <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-2">
           <div className="text-2xl">🔄</div>
           <div>
-            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">Active</h4>
+            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">
+              Active
+            </h4>
             <p className="text-xs text-neutral-500">Cross-Tab Session Sync</p>
           </div>
         </div>
@@ -79,8 +100,12 @@ const HomePage = () => {
         <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-2">
           <div className="text-2xl">🎯</div>
           <div>
-            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">useMemo</h4>
-            <p className="text-xs text-neutral-500">Stable Context References</p>
+            <h4 className="text-xl font-bold text-neutral-900 dark:text-white">
+              useMemo
+            </h4>
+            <p className="text-xs text-neutral-500">
+              Stable Context References
+            </p>
           </div>
         </div>
       </section>
@@ -99,25 +124,34 @@ const HomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
           <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-3">
             <span className="text-3xl">🛡️</span>
-            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Route Guards</h3>
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Route Guards
+            </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-              Robust client-side authorization using React Router v7 nested layouts and Outlet.
+              Robust client-side authorization using React Router v7 nested
+              layouts and Outlet.
             </p>
           </div>
 
           <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-3">
             <span className="text-3xl">⚡</span>
-            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Context Splitting</h3>
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Context Splitting
+            </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-              Decoupled State and Dispatch contexts to ensure action components never re-render.
+              Decoupled State and Dispatch contexts to ensure action components
+              never re-render.
             </p>
           </div>
 
           <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-3">
             <span className="text-3xl">💾</span>
-            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Persistent & Synced</h3>
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Persistent & Synced
+            </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-              Local storage persistence backed by instant reactivity and live data synchronization.
+              Local storage persistence backed by instant reactivity and live
+              data synchronization.
             </p>
           </div>
         </div>
