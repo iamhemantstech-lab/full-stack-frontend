@@ -21,7 +21,6 @@ export default function Navbar() {
   const closeMenu = () => setIsOpen(false);
   const toggleMenu = () => setIsOpen((prev) => !prev);
   const handleLogout = async () => {
-    console.log("aaa");
     closeMenu();
     await dispatchAction(logoutUser());
     navigate("/login");

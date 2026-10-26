@@ -47,11 +47,8 @@ export default function Login() {
       return;
     }
 
-    console.log("formData", formData);
-
     try {
       const response = await dispatch(loginUser(formData)).unwrap();
-      console.log("login page", response);
       if (response?.statusCode === 200) {
         setFormData({
           email: "",

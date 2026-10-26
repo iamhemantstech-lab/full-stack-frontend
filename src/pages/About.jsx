@@ -10,11 +10,7 @@ export default function About() {
   const handleClick = () => {
     setCount(count + 1);
     test = test + 1;
-    console.log("test", test);
   };
-
-  // console.log("count = ", count);
-  // console.log("test = ", test);
 
   return (
     <section
@@ -35,7 +31,6 @@ export default function About() {
           style={{ cursor: "pointer" }}
           onClick={() => {
             setMultiplier(multiplier + 1);
-            console.log("multiplier", multiplier);
 
             // to get updated value in log
             // const newVal = multiplier + 1;

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { selectAuth, logoutUser } from "../store/slices/authSlice";
+import { selectAuth, logoutUser, setUserRole } from "../store/slices/authSlice";
 
 const AuthStateContext = createContext(null);
 const AuthDispatchContext = createContext(null);
@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   const dispatchValue = useMemo(
     () => ({
       logout: () => dispatch(logoutUser()),
+      switchRole: (newRole) => dispatch(setUserRole(newRole)),
     }),
     [dispatch],
   );

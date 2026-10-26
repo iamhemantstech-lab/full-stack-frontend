@@ -13,10 +13,11 @@ export default function ProfileDropdown({ onOpenProfile }) {
   const role = currentUser?.role || "user";
   const isAdmin = role === "admin";
   const fullName =
-    `${currentUser?.firstName || "Alex"} ${currentUser?.lastName || "User"}`.trim();
+    `${currentUser?.firstname || currentUser?.firstName || "Alex"} ${currentUser?.lastname || currentUser?.lastName || "User"}`.trim();
   const email = currentUser?.email || "user@example.com";
   const initials = (
-    (currentUser?.firstName?.[0] || "U") + (currentUser?.lastName?.[0] || "")
+    (currentUser?.firstname?.[0] || currentUser?.firstName?.[0] || "U") +
+    (currentUser?.lastname?.[0] || currentUser?.lastName?.[0] || "")
   ).toUpperCase();
 
   // Close when clicking outside or pressing Escape
@@ -72,11 +73,10 @@ export default function ProfileDropdown({ onOpenProfile }) {
         aria-expanded={isOpen}
         aria-label="User account menu"
         title={`${fullName} (${role})`}
-        className={`group inline-flex items-center gap-1.5 p-1 pr-2 rounded-full border transition-all duration-200 outline-none ${
-          isOpen
+        className={`group inline-flex items-center gap-1.5 p-1 pr-2 rounded-full border transition-all duration-200 outline-none ${isOpen
             ? "border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/20"
             : "border-neutral-200 dark:border-neutral-800 bg-neutral-100/60 dark:bg-neutral-800/60 hover:border-indigo-400/50 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-        }`}
+          }`}
       >
         <div className="relative w-8 h-8">
           <div className="w-full h-full rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-sm">
@@ -86,22 +86,19 @@ export default function ProfileDropdown({ onOpenProfile }) {
           </div>
           {/* Live status dot with pulse */}
           <span
-            className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-neutral-900 ${
-              isAdmin ? "bg-amber-500" : "bg-emerald-500"
-            }`}
+            className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-neutral-900 ${isAdmin ? "bg-amber-500" : "bg-emerald-500"
+              }`}
           >
             <span
-              className={`absolute inset-0 rounded-full animate-ping opacity-75 ${
-                isAdmin ? "bg-amber-500" : "bg-emerald-500"
-              }`}
+              className={`absolute inset-0 rounded-full animate-ping opacity-75 ${isAdmin ? "bg-amber-500" : "bg-emerald-500"
+                }`}
             />
           </span>
         </div>
 
         <svg
-          className={`w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-200 transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-indigo-500" : ""
-          }`}
+          className={`w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-200 transition-transform duration-200 ${isOpen ? "rotate-180 text-indigo-500" : ""
+            }`}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -134,11 +131,10 @@ export default function ProfileDropdown({ onOpenProfile }) {
                     {fullName}
                   </span>
                   <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 ${
-                      isAdmin
+                    className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 ${isAdmin
                         ? "bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30"
                         : "bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30"
-                    }`}
+                      }`}
                   >
                     {isAdmin ? "Admin" : "User"}
                   </span>
@@ -163,11 +159,10 @@ export default function ProfileDropdown({ onOpenProfile }) {
                 <button
                   type="button"
                   onClick={() => handleSetRole("user")}
-                  className={`flex items-center justify-center gap-1.5 py-1 px-2 text-xs font-medium rounded-lg transition-all ${
-                    !isAdmin
+                  className={`flex items-center justify-center gap-1.5 py-1 px-2 text-xs font-medium rounded-lg transition-all ${!isAdmin
                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm font-semibold"
                       : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -184,11 +179,10 @@ export default function ProfileDropdown({ onOpenProfile }) {
                 <button
                   type="button"
                   onClick={() => handleSetRole("admin")}
-                  className={`flex items-center justify-center gap-1.5 py-1 px-2 text-xs font-medium rounded-lg transition-all ${
-                    isAdmin
+                  className={`flex items-center justify-center gap-1.5 py-1 px-2 text-xs font-medium rounded-lg transition-all ${isAdmin
                       ? "bg-indigo-600 text-white shadow-sm font-semibold"
                       : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <svg
                     viewBox="0 0 24 24"

@@ -91,7 +91,6 @@ const Signup = () => {
 
       // 3. Dispatch Redux Thunk
       const response = await dispatch(registerUser(formDataPayload)).unwrap();
-      console.log("Signup response:", response);
 
       // 4. On successful registration, redirect directly to login
       if (response?.statusCode === 200 || response?.data) {

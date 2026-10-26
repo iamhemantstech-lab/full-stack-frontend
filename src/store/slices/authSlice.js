@@ -53,8 +53,6 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await apiClient.post(authRoute.LOGIN_ENDPOINT, payload);
 
-      console.log("thunk response", response);
-
       const { user, accessToken, refreshToken } = response?.data?.data || {};
 
       if (accessToken) {
@@ -86,11 +84,7 @@ export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("api");
-
       const response = await apiClient.post(authRoute.LOGOUT_ENDPOINT);
-
-      console.log("thunk logout esponse", response);
 
       localStorage.removeItem("user");
       tokenStorage.clearAll();
@@ -126,6 +120,12 @@ const authSlice = createSlice({
       state.isSuccess = false;
       state.isError = false;
       state.message = "";
+    },
+    setUserRole: (state, action) => {
+      if (state.user) {
+        state.user.role = action.payload;
+        localStorage.setItem("user", JSON.stringify(state.user));
+      }
     },
   },
   extraReducers: (builder) => {
@@ -188,7 +188,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { resetAuthState } = authSlice.actions;
+export const { resetAuthState, setUserRole } = authSlice.actions;
 
 // Selectors
 export const selectAuth = (state) => state.auth;

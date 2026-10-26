@@ -76,7 +76,6 @@ apiClient.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then((newToken) => {
-            console.log("newToken", newToken);
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
           })
           .catch((err) => Promise.reject(err));

@@ -1,129 +1,95 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useCrm } from "../../context/crmContext";
-import ConfirmDialog from "../../components/common/ConfirmDialog";
-import Toast from "../../components/common/Toast";
+import { apiClient } from "../../services/apiClient";
+import Pagination from "../../components/common/Pagination";
 
-const CATEGORIES = ["All", "Electronics", "Furniture", "Accessories", "Software"];
+const CATEGORIES = ["All", "Electronics", "Furniture", "Accessories", "Lifestyle", "Software"];
 
 export default function Products() {
-  const { products, addProduct, updateProduct, deleteProduct } = useCrm();
+  const { products: localProducts } = useCrm();
 
-  // Search & Filter State
+  // State
+  const [products, setProducts] = useState(localProducts || []);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
-
-  // Modals state
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
-  const [deletingProduct, setDeletingProduct] = useState(null);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "Electronics",
-    price: "",
-    stock: "",
-    sku: "",
-    description: "",
-  });
-  const [formErrors, setFormErrors] = useState({});
+  // Pagination State (8 products per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
 
-  // Toast feedback state
-  const [toastMessage, setToastMessage] = useState("");
+  // Fetch products directly from MongoDB backend API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProductsFromDb = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get("/products");
+        const backendProducts = response?.data?.data?.products || response?.data?.data;
+        if (isMounted && Array.isArray(backendProducts) && backendProducts.length > 0) {
+          const mapped = backendProducts.map((p) => ({
+            id: p._id || p.id,
+            name: p.title || p.name,
+            category: p.category,
+            price: p.price,
+            stock: p.stock,
+            status: p.status,
+            sku: p.sku,
+            rating: p.rating || 4.5,
+            description: p.description,
+            image: p.image,
+          }));
+          setProducts(mapped);
+        } else if (isMounted && localProducts?.length > 0) {
+          setProducts(localProducts);
+        }
+      } catch (err) {
+        console.warn("Using local products fallback:", err.message);
+        if (isMounted && localProducts?.length > 0) {
+          setProducts(localProducts);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
 
-  // Filtered Products
+    fetchProductsFromDb();
+    return () => {
+      isMounted = false;
+    };
+  }, [localProducts]);
+
+  // Filtered Products (Search & Category)
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      const name = p.name || p.title || "";
+      const sku = p.sku || "";
+      const id = String(p.id || "");
+
       const matchesSearch =
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (p.id && p.id.toLowerCase().includes(searchTerm.toLowerCase()));
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        id.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
-        categoryFilter === "All" || p.category.toLowerCase() === categoryFilter.toLowerCase();
+        categoryFilter === "All" ||
+        (p.category && p.category.toLowerCase() === categoryFilter.toLowerCase());
 
       return matchesSearch && matchesCategory;
     });
   }, [products, searchTerm, categoryFilter]);
 
-  // Form open handlers
-  const handleOpenAddModal = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: "",
-      category: "Electronics",
-      price: "",
-      stock: "",
-      sku: "",
-      description: "",
-    });
-    setFormErrors({});
-    setIsFormOpen(true);
-  };
+  // Reset page to 1 when search or category filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter]);
 
-  const handleOpenEditModal = (product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price,
-      stock: product.stock,
-      sku: product.sku || "",
-      description: product.description || "",
-    });
-    setFormErrors({});
-    setIsFormOpen(true);
-  };
-
-  // Form validation
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.name.trim()) {
-      errors.name = "Product name is required.";
-    }
-
-    if (formData.price === "" || isNaN(formData.price) || Number(formData.price) < 0) {
-      errors.price = "Valid price is required (>= 0).";
-    }
-
-    if (formData.stock === "" || isNaN(formData.stock) || Number(formData.stock) < 0) {
-      errors.stock = "Valid stock count is required (>= 0).";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Submit Form (Create or Update)
-  const handleSubmitForm = (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const payload = {
-      ...formData,
-      price: Number(formData.price),
-      stock: parseInt(formData.stock, 10),
-    };
-
-    if (editingProduct) {
-      updateProduct(editingProduct.id, payload);
-      setToastMessage(`Product "${formData.name}" updated successfully.`);
-    } else {
-      const created = addProduct(payload);
-      setToastMessage(`Product "${created.name}" created successfully.`);
-    }
-
-    setIsFormOpen(false);
-  };
-
-  // Confirm Delete
-  const handleConfirmDelete = () => {
-    if (!deletingProduct) return;
-    deleteProduct(deletingProduct.id);
-    setToastMessage(`Product "${deletingProduct.name}" removed from catalog.`);
-    setDeletingProduct(null);
-  };
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto text-left">
@@ -134,28 +100,33 @@ export default function Products() {
             Products Inventory
           </h2>
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Manage SKU listings, unit prices, live stock counts, and categories.
+            Read-only live catalog synchronized directly with MongoDB database.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenAddModal}
-          className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors self-start sm:self-auto"
-        >
-          + Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            MongoDB Synced ({products.length} Items)
+          </span>
+        </div>
       </div>
 
       {/* Filter / Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             type="text"
-            placeholder="Search products by name, SKU, ID..."
+            placeholder="Search products by title, SKU, ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
@@ -196,26 +167,35 @@ export default function Products() {
             <thead>
               <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 text-neutral-400 uppercase font-semibold">
                 <th className="py-3 px-4">Product ID</th>
-                <th className="py-3 px-4">Product Name & SKU</th>
+                <th className="py-3 px-4">Product Title & SKU</th>
                 <th className="py-3 px-4">Category</th>
                 <th className="py-3 px-4">Price</th>
                 <th className="py-3 px-4">Stock</th>
                 <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4 text-right">View</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-              {filteredProducts.length === 0 ? (
+              {loading && products.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-12 text-center text-neutral-400">
+                    <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2" />
+                    <p className="text-xs font-semibold text-neutral-500">Loading products from MongoDB...</p>
+                  </td>
+                </tr>
+              ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-12 text-center text-neutral-400">
                     <p className="text-base font-semibold text-neutral-800 dark:text-neutral-200 mb-1">
                       No products found
                     </p>
-                    <p className="text-xs">Try adjusting your search query or category filter.</p>
+                    <p className="text-xs text-neutral-500">
+                      Try clearing search filters or add products directly to MongoDB.
+                    </p>
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product) => {
+                paginatedProducts.map((product) => {
                   const isOutOfStock = product.stock <= 0;
                   const isLowStock = product.stock > 0 && product.stock <= 5;
                   const statusLabel = isOutOfStock
@@ -225,13 +205,38 @@ export default function Products() {
                     : "In Stock";
 
                   return (
-                    <tr key={product.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors"
+                    >
                       <td className="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                        {product.id}
+                        {String(product.id).slice(-6)}
                       </td>
                       <td className="py-3 px-4">
-                        <p className="font-semibold text-neutral-900 dark:text-white">{product.name}</p>
-                        <p className="text-[11px] text-neutral-400 font-mono">SKU: {product.sku}</p>
+                        <div className="flex items-center gap-2.5">
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-10 h-10 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 shrink-0"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm flex items-center justify-center shrink-0">
+                              📦
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-neutral-900 dark:text-white truncate max-w-[240px]">
+                              {product.name}
+                            </p>
+                            <p className="text-[11px] text-neutral-400 font-mono">
+                              SKU: {product.sku || "N/A"}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-[11px]">
@@ -242,7 +247,15 @@ export default function Products() {
                         ${Number(product.price).toFixed(2)}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`font-semibold ${isOutOfStock ? "text-rose-500" : isLowStock ? "text-amber-500" : "text-neutral-700 dark:text-neutral-300"}`}>
+                        <span
+                          className={`font-semibold ${
+                            isOutOfStock
+                              ? "text-rose-500"
+                              : isLowStock
+                              ? "text-amber-500"
+                              : "text-neutral-700 dark:text-neutral-300"
+                          }`}
+                        >
                           {product.stock} units
                         </span>
                       </td>
@@ -260,41 +273,24 @@ export default function Products() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setViewingProduct(product)}
-                            title="View Product"
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-blue-500 hover:bg-blue-500/10 transition-colors"
+                        <button
+                          type="button"
+                          onClick={() => setViewingProduct(product)}
+                          title="View Product Details"
+                          className="inline-flex items-center gap-1 py-1 px-2.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 font-semibold transition-colors text-xs"
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
                           >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(product)}
-                            title="Edit Product"
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-indigo-500 hover:bg-indigo-500/10 transition-colors"
-                          >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeletingProduct(product)}
-                            title="Delete Product"
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-                          >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          </button>
-                        </div>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                          <span>Details</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -305,147 +301,16 @@ export default function Products() {
         </div>
       </div>
 
-      {/* CREATE / EDIT PRODUCT MODAL */}
-      {isFormOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
-          onClick={() => setIsFormOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl text-left animate-in zoom-in-95 duration-150"
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
-              <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-                {editingProduct ? `Edit Product (${editingProduct.id})` : "Add New Product"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(false)}
-                className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitForm} className="space-y-4" noValidate>
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Ergonomic Keyboard Pro"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full py-2 px-3 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
-                    formErrors.name ? "border-rose-500" : "border-neutral-200 dark:border-neutral-700"
-                  }`}
-                />
-                {formErrors.name && <p className="text-[11px] text-rose-500 mt-1">{formErrors.name}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full py-2 px-3 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  >
-                    <option value="Electronics">Electronics</option>
-                    <option value="Furniture">Furniture</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Software">Software</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    SKU Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ELEC-KB-900"
-                    value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="w-full py-2 px-3 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Unit Price ($) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="299.99"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className={`w-full py-2 px-3 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
-                      formErrors.price ? "border-rose-500" : "border-neutral-200 dark:border-neutral-700"
-                    }`}
-                  />
-                  {formErrors.price && <p className="text-[11px] text-rose-500 mt-1">{formErrors.price}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Stock Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="25"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className={`w-full py-2 px-3 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
-                      formErrors.stock ? "border-rose-500" : "border-neutral-200 dark:border-neutral-700"
-                    }`}
-                  />
-                  {formErrors.stock && <p className="text-[11px] text-rose-500 mt-1">{formErrors.stock}</p>}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows="3"
-                  placeholder="Features, hardware specs..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full py-2 px-3 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-                <button
-                  type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors"
-                >
-                  {editingProduct ? "Save Changes" : "Create Product"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Reusable Pagination */}
+      {filteredProducts.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredProducts.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+          className="px-2"
+        />
       )}
 
       {/* VIEW PRODUCT DETAILS MODAL */}
@@ -461,7 +326,9 @@ export default function Products() {
             className="w-full max-w-md p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl text-left animate-in zoom-in-95 duration-150"
           >
             <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
-              <h3 className="text-base font-bold text-neutral-900 dark:text-white">Product Details</h3>
+              <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                Product Details
+              </h3>
               <button
                 type="button"
                 onClick={() => setViewingProduct(null)}
@@ -472,12 +339,27 @@ export default function Products() {
             </div>
 
             <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-xl flex items-center justify-center">
-                📦
-              </div>
+              {viewingProduct.image ? (
+                <img
+                  src={viewingProduct.image}
+                  alt={viewingProduct.name}
+                  className="w-16 h-16 rounded-xl object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-xl flex items-center justify-center shrink-0">
+                  📦
+                </div>
+              )}
               <div>
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{viewingProduct.name}</h4>
-                <p className="text-xs text-neutral-400">{viewingProduct.category} • SKU: {viewingProduct.sku}</p>
+                <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
+                  {viewingProduct.name}
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  {viewingProduct.category} • SKU: {viewingProduct.sku || "N/A"}
+                </p>
                 <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 block mt-1">
                   ${Number(viewingProduct.price).toFixed(2)}
                 </span>
@@ -487,60 +369,52 @@ export default function Products() {
             <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 space-y-3 mb-5 text-xs">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-neutral-400">Product ID</span>
-                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">{viewingProduct.id}</span>
+                  <span className="block text-[10px] uppercase font-bold text-neutral-400">
+                    Product ID
+                  </span>
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200 truncate block">
+                    {viewingProduct.id}
+                  </span>
                 </div>
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-neutral-400">Stock Units</span>
-                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">{viewingProduct.stock} in stock</span>
+                  <span className="block text-[10px] uppercase font-bold text-neutral-400">
+                    Stock Units
+                  </span>
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                    {viewingProduct.stock} units
+                  </span>
                 </div>
               </div>
               <div>
-                <span className="block text-[10px] uppercase font-bold text-neutral-400">Description</span>
+                <span className="block text-[10px] uppercase font-bold text-neutral-400">
+                  Rating
+                </span>
+                <span className="font-semibold text-amber-500">
+                  ⭐ {viewingProduct.rating || 4.5} / 5.0
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-neutral-400">
+                  Description
+                </span>
                 <p className="text-neutral-600 dark:text-neutral-400 mt-0.5 leading-relaxed">
-                  {viewingProduct.description || "Standard catalog product."}
+                  {viewingProduct.description || "No description provided."}
                 </p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => setViewingProduct(null)}
-                className="px-4 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
+                className="w-full py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors"
               >
                 Close
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const prod = viewingProduct;
-                  setViewingProduct(null);
-                  handleOpenEditModal(prod);
-                }}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 text-white"
-              >
-                Edit Product
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* CONFIRM DELETE DIALOG */}
-      <ConfirmDialog
-        isOpen={!!deletingProduct}
-        title="Delete Product?"
-        message={`Are you sure you want to remove "${deletingProduct?.name}" (${deletingProduct?.id}) from catalog?`}
-        confirmText="Yes, Delete"
-        cancelText="Cancel"
-        type="danger"
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeletingProduct(null)}
-      />
-
-      {/* TOAST FEEDBACK */}
-      <Toast message={toastMessage} type="success" onClose={() => setToastMessage("")} />
     </div>
   );
 }
