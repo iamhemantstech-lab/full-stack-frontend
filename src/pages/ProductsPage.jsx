@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Pagination from "../components/common/Pagination";
@@ -10,15 +10,9 @@ import {
   selectProductStatus,
   selectProductError,
 } from "../store/slices/productSlice";
-import {
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  clearCart,
-  selectCartItems,
-  selectCartTotalCount,
-  selectCartTotalPrice,
-} from "../store/slices/cartSlice";
+import { addToCart } from "../store/slices/cartSlice";
+import CartSidebar from "../components/CartSidebar";
+import ProductCard from "../components/ProductCard";
 
 const CATEGORIES = [
   "All",
@@ -40,10 +34,6 @@ export default function ProductsPage() {
   const total = useSelector(selectProductTotal);
   const status = useSelector(selectProductStatus);
   const error = useSelector(selectProductError);
-
-  const cartItems = useSelector(selectCartItems);
-  const totalQuantity = useSelector(selectCartTotalCount);
-  const totalPrice = useSelector(selectCartTotalPrice);
 
   // Local Search & Pagination State
   const [searchInput, setSearchInput] = useState("");
@@ -83,6 +73,16 @@ export default function ProductsPage() {
   const handleClearSearch = () => {
     setSearchInput("");
   };
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handleAddToCart = useCallback(
+    (product) => {
+      dispatch(addToCart({ product, quantity: 1 }));
+    },
+    [dispatch],
+  );
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8 text-left">
@@ -244,79 +244,11 @@ export default function ProductsPage() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {products.map((product) => (
-                  <div
+                  <ProductCard
                     key={product.id}
-                    className="group p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between hover:border-indigo-500/40 hover:shadow-md transition-all"
-                  >
-                    <div className="space-y-3">
-                      {product.image && (
-                        <div className="w-full h-44 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-800 relative">
-                          <img
-                            src={product.image}
-                            alt={product.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                          <span className="absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded-md bg-black/60 text-white backdrop-blur-sm">
-                            {product.category}
-                          </span>
-                        </div>
-                      )}
-
-                      <div>
-                        <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
-                          <span>{product.sku}</span>
-                          <span className="text-amber-500 font-semibold">
-                            ⭐ {product.rating}
-                          </span>
-                        </div>
-                        <Link
-                          to={`/products/${product.id}`}
-                          className="block text-sm font-bold text-neutral-900 dark:text-white line-clamp-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                        >
-                          {product.title}
-                        </Link>
-                        {product.description && (
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 mt-1">
-                            {product.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-800">
-                      <div>
-                        <span className="text-base font-extrabold text-neutral-900 dark:text-white">
-                          ${Number(product.price).toFixed(2)}
-                        </span>
-                        <p className="text-[10px] text-neutral-400">
-                          {product.stock > 0
-                            ? `${product.stock} in stock`
-                            : "Out of stock"}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/products/${product.id}`)}
-                          className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
-                        >
-                          Details →
-                        </button>
-                        <button
-                          type="button"
-                          disabled={product.stock <= 0}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-sm transition-colors"
-                          onClick={() => dispatch(addToCart(product))}
-                        >
-                          + Add
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    product={product}
+                    onAddToCart={handleAddToCart}
+                  />
                 ))}
               </div>
 
@@ -326,7 +258,7 @@ export default function ProductsPage() {
                 totalPages={totalPages}
                 totalItems={total}
                 itemsPerPage={LIMIT}
-                onPageChange={(page) => setCurrentPage(page)}
+                onPageChange={handlePageChange}
                 className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800"
               />
             </>
@@ -334,101 +266,7 @@ export default function ProductsPage() {
         </section>
 
         {/* Right Column: Redux Cart Drawer */}
-        <aside className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-neutral-800">
-            <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-              🛒 Shopping Cart
-            </h3>
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
-              {totalQuantity} items
-            </span>
-          </div>
-
-          {cartItems.length === 0 ? (
-            <p className="text-xs text-neutral-400 text-center py-8 italic">
-              Your cart is empty. Add products to test cart flow.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-3 max-h-80 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="pt-2 flex items-center justify-between gap-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-neutral-900 dark:text-white truncate">
-                        {item.title}
-                      </p>
-                      <span className="text-[11px] text-neutral-400">
-                        ${Number(item.price).toFixed(2)} each
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-xs flex items-center justify-center hover:bg-neutral-200"
-                        onClick={() =>
-                          dispatch(
-                            updateQuantity({
-                              id: item.id,
-                              quantity: item.quantity - 1,
-                            }),
-                          )
-                        }
-                      >
-                        -
-                      </button>
-                      <span className="text-xs font-bold w-5 text-center">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-xs flex items-center justify-center hover:bg-neutral-200"
-                        onClick={() =>
-                          dispatch(
-                            updateQuantity({
-                              id: item.id,
-                              quantity: item.quantity + 1,
-                            }),
-                          )
-                        }
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        className="text-rose-500 hover:text-rose-700 p-1 text-xs"
-                        title="Remove"
-                        onClick={() => dispatch(removeFromCart(item.id))}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
-                <div className="flex justify-between items-center text-sm font-bold text-neutral-900 dark:text-white">
-                  <span>Grand Total:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400">
-                    ${Number(totalPrice).toFixed(2)}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  className="w-full py-2 text-xs font-semibold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 transition-colors"
-                  onClick={() => dispatch(clearCart())}
-                >
-                  Clear Cart
-                </button>
-              </div>
-            </div>
-          )}
-        </aside>
+        <CartSidebar />
       </div>
     </div>
   );

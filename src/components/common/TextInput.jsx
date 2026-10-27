@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function TextInput({
+export default React.memo(function TextInput({
   label,
   id,
   name,
@@ -27,7 +27,10 @@ export default function TextInput({
   return (
     <div className={`space-y-1 text-left ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+        <label
+          htmlFor={inputId}
+          className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+        >
           {label}
           {required && <span className="text-rose-500 ml-0.5">*</span>}
         </label>
@@ -65,7 +68,9 @@ export default function TextInput({
         )}
       </div>
 
-      {error && <p className="text-[11px] text-rose-500 font-medium">{error}</p>}
+      {error && (
+        <p className="text-[11px] text-rose-500 font-medium">{error}</p>
+      )}
     </div>
   );
-}
+});

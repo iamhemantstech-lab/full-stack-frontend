@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 
-export default function Pagination({
+export default React.memo(function Pagination({
   currentPage = 1,
   totalPages = 1,
   onPageChange,
@@ -185,4 +185,4 @@ export default function Pagination({
       </div>
     </nav>
   );
-}
+});

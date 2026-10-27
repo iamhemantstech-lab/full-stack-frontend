@@ -4,7 +4,7 @@ const StateContext = createContext(null);
 const DispatchContext = createContext(null);
 
 const initalState = {
-  theme: localStorage.getItem("tehem") || "dark",
+  theme: localStorage.getItem("theme") || "dark",
   user: {
     name: "John",
     notificationsCount: 3,

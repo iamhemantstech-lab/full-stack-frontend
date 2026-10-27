@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppState } from "../context/dataContext";
 import { useAuthDispatch, useAuthState } from "../context/authContext";
 import { useDispatch, useSelector } from "react-redux";
 import { selectCartTotalCount } from "../store/slices/cartSlice";
 import ProfileDropdown from "./ProfileDropdown";
-import ProfileModal from "./ProfileModal";
 import { logoutUser } from "../store/slices/authSlice";
+
+const ProfileModal = lazy(() => import("./ProfileModal"));
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const { theme } = useAppState();
   const dispatch = useAppDispatch();
   const dispatchAction = useDispatch();
@@ -235,10 +237,15 @@ export default function Navbar() {
       )}
 
       {/* Profile Modal */}
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
+
+      {isProfileOpen && (
+        <Suspense fallback={null}>
+          <ProfileModal
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+          />
+        </Suspense>
+      )}
     </header>
   );
 }

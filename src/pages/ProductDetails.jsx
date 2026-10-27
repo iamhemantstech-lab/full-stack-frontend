@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -26,16 +26,16 @@ export default function ProductDetails() {
   }, [status, dispatch]);
 
   // Find product matching current URL parameter
-  const product = products.find((p) => String(p.id) === String(id));
+  const product = useMemo(() => {
+    return products.find((p) => String(p.id) === String(id));
+  }, [products, id]);
 
-  const handleAddToCart = () => {
-    if (!product) return;
-    for (let i = 0; i < quantity; i++) {
-      dispatch(addToCart(product));
-    }
-    setAddedNotice(true);
-    setTimeout(() => setAddedNotice(false), 2000);
-  };
+  const handleAddToCart = useCallback(
+    (product) => {
+      dispatch(addToCart({ product, quantity: 1 }));
+    },
+    [dispatch],
+  );
 
   if (status === "loading" && !product) {
     return (

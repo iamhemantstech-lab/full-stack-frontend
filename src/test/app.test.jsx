@@ -30,19 +30,19 @@ const renderWithProviders = (initialRoute = "/") => {
 
 describe("App component test suite", () => {
   // Test Case 1: Checking redirects and initial landing
-  it("should redirect unauthenticated users to the login page", () => {
+  it("should redirect unauthenticated users to the login page", async () => {
     renderWithProviders("/");
 
     // Checks that the Login page heading is displayed
-    const heading = screen.getByRole("heading", { name: /welcome back/i });
+    const heading = await screen.findByRole("heading", { name: /welcome back/i });
     expect(heading).toBeInTheDocument();
   });
 
   // Test Case 2: Checking presence of form elements
-  it("should display email and password inputs with a submit button on login", () => {
+  it("should display email and password inputs with a submit button on login", async () => {
     renderWithProviders("/login");
 
-    const emailInput = screen.getByLabelText(/email address/i);
+    const emailInput = await screen.findByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i, {
       selector: "input",
     });
@@ -54,10 +54,10 @@ describe("App component test suite", () => {
   });
 
   // Test Case 3: Testing user interaction (typing into inputs)
-  it("should update input values when user types in email and password", () => {
+  it("should update input values when user types in email and password", async () => {
     renderWithProviders("/login");
 
-    const emailInput = screen.getByLabelText(/email address/i);
+    const emailInput = await screen.findByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i, {
       selector: "input",
     });
@@ -70,20 +70,20 @@ describe("App component test suite", () => {
   });
 
   // Test Case 4: Route navigation to another page (Signup)
-  it("should render the signup page when navigating to /signup", () => {
+  it("should render the signup page when navigating to /signup", async () => {
     renderWithProviders("/signup");
 
-    const signupHeading = screen.getByRole("heading", {
+    const signupHeading = await screen.findByRole("heading", {
       name: /create account/i,
     });
     expect(signupHeading).toBeInTheDocument();
   });
 
   // Test Case 5: 404 Not Found page for invalid routes
-  it("should render 404 Not Found page when visiting an unknown URL", () => {
+  it("should render 404 Not Found page when visiting an unknown URL", async () => {
     renderWithProviders("/some-unknown-path-xyz");
 
-    const notFoundText = screen.getByText(/lost in space\? page not found/i);
+    const notFoundText = await screen.findByText(/lost in space\? page not found/i);
     expect(notFoundText).toBeInTheDocument();
   });
 });

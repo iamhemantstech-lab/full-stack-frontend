@@ -1,25 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useAuthState } from "../context/authContext";
 
 const HomePage = () => {
   const authState = useAuthState?.() || {};
   const currentUser = authState?.currentUser;
-
-  useEffect(() => {
-    let seconds = 1;
-    const timer = setInterval(() => {
-      console.log("timer:", seconds++);
-
-      if (seconds > 60) {
-        clearInterval(timer);
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-12 space-y-16 text-center">
